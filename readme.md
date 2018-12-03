@@ -3,13 +3,14 @@
 ### Software Engineering Course Project
 
 ## How to compile/build
+```
+ cd ./build
 
-> cd ./build
+ cmake .
 
-> cmake .
-
-> make
-
+ make
+```
 ## How to use
-
-> ./main TestData/config.conf
+```
+./main TestData/config.conf
+```
