@@ -12,15 +12,17 @@ using std::string;
 
 class NoCopyString {
 public:
+	NoCopyString() { }
     NoCopyString(const char * s) : _data(s), _size(strlen(s)) { }
     NoCopyString(char * s, size_t n) : _data(s), _size(n) { } 
     NoCopyString(const string & s) : _data(s.data()), _size(s.size()) { }
 
 	// The only copy method
 	NoCopyString(const NoCopyString & that) {
-		_data = new char[that._size];
+		char* tmp = new char[that._size];
 		_size = that._size;
-		memcpy(_data, that._data, _size);
+		memcpy(tmp, that._data, _size);
+		_data = tmp;
 		_need_free = true;
 	}
 
@@ -33,7 +35,7 @@ public:
     
     int size() const { return _size;}
 
-	int compare(const NoCopyString & that) {
+	int compare(const NoCopyString & that) const{
 		if (that._size == _size)
 			return memcmp(_data, that._data, _size);
 		if (that._size < _size) {
@@ -47,11 +49,11 @@ public:
 	}
 
 
-	bool operator == (const NoCopyString & that) {
+	bool operator == (const NoCopyString & that) const {
 		return compare(that) == 0;
 	}
 
-	bool operator < (const NoCopyString & that) {
+	bool operator < (const NoCopyString & that) const {
 		return compare(that) < 0;
 	}
 
@@ -67,7 +69,7 @@ class ValueType : public NoCopyString {
 public :
 	bool removed = false;
 	ValueType(){ }
-	ValueType(const ValueType & that) : removed(that.removed) : NoCopyString(that){ }
+	ValueType(const ValueType & that) : removed(that.removed), NoCopyString(that){ }
 };
 
 class ScanHandle {

@@ -8,7 +8,7 @@
 #include <mutex>
 
 namespace kv_engine {
-
+using std::pair;
 Status RBTree::Put(const KeyType & key, const ValueType & value, const bool overwrite) {
 	std::lock_guard<std::mutex> guard(_mtx);
 	if (overwrite)
@@ -16,7 +16,7 @@ Status RBTree::Put(const KeyType & key, const ValueType & value, const bool over
 	else {
 		if (_map.find(key) != _map.end())
 			return KeyExists;
-		_map.insert(key, value);
+		_map.insert(pair<KeyType, ValueType>(key, value));
 	}
 	return Success;
 }
@@ -45,7 +45,7 @@ Status RBTree::Delete(const KeyType & key) {
 	return Success;
 }
 
-Status RBTree::size() {
+size_t RBTree::size() {
 	return _map.size();
 }
 } // namespace kv_engine

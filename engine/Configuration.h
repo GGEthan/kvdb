@@ -4,7 +4,10 @@
 namespace kv_engine {
 class Configuration {
 public:
-	static int MAX_MEMTABLE_SIZE = 0;
+	static int MAX_MEMTABLE_SIZE;
+	static void init() {
+		MAX_MEMTABLE_SIZE = 0;
+	}
 };
 } // namespace kv_engine
 

@@ -23,7 +23,7 @@ public:
     
     virtual Status Delete(const KeyType & key) = 0;
 
-	virtual size_t size();
+	virtual size_t size() = 0;
 };
 
 // Use std::map as Index
@@ -33,6 +33,13 @@ public:
     virtual ~RBTree(){}
 	virtual Status Put(const KeyType & key, const ValueType & value, const bool overwrite) override;
 	
+    virtual Status Get(const KeyType & key, ValueType & value) override;
+
+    virtual Status Scan(const KeyType & start, const int record_count, ScanHandle & handle) override;
+    
+    virtual Status Delete(const KeyType & key) override;
+
+    virtual size_t size() override;
 private:
     std::map<KeyType, ValueType> _map;
 	std::mutex _mtx;

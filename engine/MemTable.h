@@ -48,9 +48,15 @@ private:
 	mutex _writers_mtx;
 	condition_variable _writers_cv;
 
-	void SetImmutable();
-	void AddImmutableTable();
+	void setImmutable();
+	void addImmutableTable();
 
+	bool testTableSize();
+
+	void writerIn();
+	void writerOut();
+	void readerIn();
+	void readerOut();
 };
 
 }
