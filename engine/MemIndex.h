@@ -3,6 +3,8 @@
 
 #include "BaseType.h"
 
+#include <mutex>
+
 #include <map>
 
 namespace kv_engine {
@@ -20,6 +22,8 @@ public:
     virtual Status Scan(const KeyType & start, const int record_count, ScanHandle & handle) = 0;
     
     virtual Status Delete(const KeyType & key) = 0;
+
+	virtual size_t size();
 };
 
 // Use std::map as Index
@@ -27,10 +31,11 @@ class RBTree : public MemIndex {
 public:
     RBTree(){}
     virtual ~RBTree(){}
-
+	virtual Status Put(const KeyType & key, const ValueType & value, const bool overwrite) override;
+	
 private:
     std::map<KeyType, ValueType> _map;
-
+	std::mutex _mtx;
 };
 
 } // namespace kv_engine

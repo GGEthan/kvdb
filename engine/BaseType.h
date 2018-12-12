@@ -5,17 +5,10 @@
 
 #include <string.h>
 
+#include "Util.h"
 namespace kv_engine {
 
 using std::string;
-
-enum Status {
-    Success,
-    KeyNotFound,
-    TableFull,
-    IOError,
-    UnknownError
-};
 
 class NoCopyString {
 public:
@@ -23,18 +16,59 @@ public:
     NoCopyString(char * s, size_t n) : _data(s), _size(n) { } 
     NoCopyString(const string & s) : _data(s.data()), _size(s.size()) { }
 
+	// The only copy method
+	NoCopyString(const NoCopyString & that) {
+		_data = new char[that._size];
+		_size = that._size;
+		memcpy(_data, that._data, _size);
+		_need_free = true;
+	}
+
+	~NoCopyString() {
+		if (_need_free && _data != nullptr)
+			delete _data;
+	}
+
     const char * data() const { return _data;}
     
     int size() const { return _size;}
 
+	int compare(const NoCopyString & that) {
+		if (that._size == _size)
+			return memcmp(_data, that._data, _size);
+		if (that._size < _size) {
+			if (memcmp(_data, that._data, that._size) >= 0)
+				return 1;
+			return -1;
+		}
+		if (memcmp(_data, that._data, _size) > 0)
+			return 1;
+		return -1;
+	}
+
+
+	bool operator == (const NoCopyString & that) {
+		return compare(that) == 0;
+	}
+
+	bool operator < (const NoCopyString & that) {
+		return compare(that) < 0;
+	}
+
 protected:
-    const char * _data = nullptr;
+    const char * _data = (const char *)this;
     size_t _size = 0;
+	bool _need_free = false;
 };
 
 typedef NoCopyString KeyType;
 
-typedef NoCopyString ValueType;
+class ValueType : public NoCopyString {
+public :
+	bool removed = false;
+	ValueType(){ }
+	ValueType(const ValueType & that) : removed(that.removed) : NoCopyString(that){ }
+};
 
 class ScanHandle {
 
