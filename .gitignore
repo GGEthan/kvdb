@@ -1,0 +1,6 @@
+build/CmakeFiles/*
+build/TestData/*
+build/CmakeCache.txt
+build/CmakeLists.txt
+build/main
+build/Makefile
