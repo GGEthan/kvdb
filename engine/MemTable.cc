@@ -41,6 +41,33 @@ void MemTable::setImmutable() {
 	_mutable = false;
 }
 
+Status MemTable::SafeSetImmutable() {
+	static mutex mtx;
+	lock_guard<mutex> guard(mtx);
+	return SetImmutable();
+}
+
+Status MemTable::SetImmutable() {
+	if (!_mutable) 
+		return Success;
+	
+	change_mtx.lock(); // try to lock, wait until release the old one
+	immutableTable = this;
+
+	// TODO : persist immutableTable background
+
+	memTable = new MemTable();
+
+	_mutable = false;
+	return Success;
+}
+
+Status MemTable::ApproximateMemorySize(size_t & size) {
+	// TODO : Cannot be such easy here.
+	size = _size;
+	return Success;
+}
+
 Status MemTable::Get(const KeyType & key, ValueType & value) {
 	readerIn();
 
@@ -103,7 +130,7 @@ void MemTable::readerIn() {
 	_readers ++;
 	_readers_mtx.unlock();
 }
-
+ 
 void MemTable::readerOut() {
 	_readers_mtx.lock();
 	_readers --;

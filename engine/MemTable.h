@@ -18,9 +18,12 @@ class MemTable {
 public:
 	static MemTable* memTable;
 	static MemTable* immutableTable;
+	
+	long id;
 
     MemTable() { 
 		_index = new RBTree();
+		id = time(NULL);
 	}
     Status Put(const KeyType & key, const ValueType & value, const bool overwrite);
 
@@ -29,6 +32,10 @@ public:
     Status Scan(const KeyType & start, const int record_count, ScanHandle & handle);
     
     Status Delete(const KeyType & key);
+
+	Status ApproximateMemorySize(size_t & size);
+
+	Status SafeSetImmutable();
 private:
 	static mutex change_mtx;
 	static condition_variable change_cv;
@@ -40,13 +47,16 @@ private:
 	
 	bool _mutable = true;
 
-	int _readers = 0;
+	int _readers = 0; 
 	mutex _readers_mtx;
 	condition_variable _readers_cv;
 
 	int _writers = 0;
 	mutex _writers_mtx;
 	condition_variable _writers_cv;
+
+	
+	Status SetImmutable();
 
 	void setImmutable();
 	void addImmutableTable();
