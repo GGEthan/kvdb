@@ -45,7 +45,42 @@ Status RBTree::Delete(const KeyType & key) {
 	return Success;
 }
 
+ScanHandle* RBTree::GetIterator() { 
+	return new RBTreeScanHandle(&_map);
+}
 size_t RBTree::size() {
 	return _map.size();
 }
+
+
+RBTreeScanHandle::RBTreeScanHandle(std::map<KeyType, ValueType>* map) {
+	_map = map;
+	_iter = _map->begin();
+}
+
+RBTreeScanHandle::RBTreeScanHandle(std::map<KeyType, ValueType>* map, const KeyType & key) {
+	_map = map;
+	_iter = _map->find(key);
+}
+
+
+RBTreeScanHandle::~RBTreeScanHandle() {
+
+}
+
+Status RBTreeScanHandle::GetKeyValue(KeyType & key, ValueType & value) {
+	if (_iter == _map->end()) {
+		return KeyNotFound;
+	}
+	key = _iter->first;
+	value = _iter->second;
+}
+
+bool RBTreeScanHandle::GetNext() {
+	_iter++;
+	if (_iter == _map->end()) 
+		return false;
+	return true;
+}
+
 } // namespace kv_engine

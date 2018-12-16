@@ -72,9 +72,7 @@ public :
 	ValueType(const ValueType & that) : removed(that.removed), NoCopyString(that){ }
 };
 
-class ScanHandle {
 
-};
 
 } // namespace kv_engine
 #endif // _ENGINE_BASE_TYPE_H_

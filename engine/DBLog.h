@@ -12,7 +12,7 @@ class DBLog {
 public:
     Status Log(const KeyType & key, const ValueType & value);
     
-    Status Open();
+    Status Open(long _id);
 
     Status Recover(MemTable * _mem);
     

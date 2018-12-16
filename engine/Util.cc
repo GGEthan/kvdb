@@ -8,6 +8,8 @@
 
 #include <string.h>
 
+#include <sstream>
+
 void SysLog(const LogMode mode, const char * format, va_list args) {
     char log_buf[512];
     sprintf(log_buf, "%d %s %s\n", time(NULL), LogString[mode], format);
@@ -44,4 +46,12 @@ void WARNLOG(const char * format, ...) {
     va_start(args, format);
     SysLog(LogMode::Warn, format, args);
     va_end(args);
+}
+
+std::string ConcatFileName(std::string file_head, int level, long id) {
+    std::stringstream ss;
+    ss << file_head << "_" << level << "_" << id;
+    std::string result;
+    ss >> result;
+    return result;
 }

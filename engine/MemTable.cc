@@ -12,6 +12,12 @@ MemTable* MemTable::immutableTable = nullptr;
 mutex MemTable::change_mtx;
 condition_variable MemTable::change_cv;
 
+MemTable::MemTable() {
+	_index = new RBTree();
+	id = time(NULL);
+	_log = new DBLog();
+	_log->Open(id);
+}
 bool MemTable::testTableSize() {
 	lock_guard<mutex> guard(_size_mtx);
 	if (!_mutable)
@@ -62,10 +68,10 @@ Status MemTable::SetImmutable() {
 	return Success;
 }
 
-Status MemTable::ApproximateMemorySize(size_t & size) {
+size_t MemTable::ApproximateMemorySize() {
 	// TODO : Cannot be such easy here.
-	size = _size;
-	return Success;
+	return _size;
+	
 }
 
 Status MemTable::Get(const KeyType & key, ValueType & value) {
@@ -79,10 +85,9 @@ Status MemTable::Get(const KeyType & key, ValueType & value) {
 
 
 Status MemTable::Put(const KeyType & key, const ValueType & value, const bool overwrite) {
-	if (!testTableSize())
-		return TableFull;
-
 	writerIn();
+
+	_log->Log(key, value);
 
 	Status res = _index->Put(key, value, overwrite);
 
@@ -95,10 +100,12 @@ Status MemTable::Put(const KeyType & key, const ValueType & value, const bool ov
 }
 
 Status MemTable::Delete(const KeyType & key) {
-	if (!testTableSize())
-		return TableFull;
-	
 	writerIn();
+
+	ValueType delete_value = ValueType();
+	delete_value.removed = true;
+
+	_log->Log(key, delete_value);
 
 	Status res = _index->Delete(key);
 
@@ -108,6 +115,7 @@ Status MemTable::Delete(const KeyType & key) {
 }
 
 Status MemTable::Scan(const KeyType & start, const int record_count, ScanHandle & handle) {
+	// TODO : Scan
 	return UnknownError;
 }
 

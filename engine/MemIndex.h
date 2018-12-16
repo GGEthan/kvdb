@@ -9,11 +9,22 @@
 
 namespace kv_engine {
 
+class ScanHandle {
+public:
+    ScanHandle(){}
+    virtual ~ScanHandle(){}
+
+    virtual Status GetKeyValue(KeyType & key, ValueType & value) = 0;
+
+    virtual bool GetNext() = 0;
+
+};
 // ThreadSafe Index
 class MemIndex {
 public:
     MemIndex(){}
     virtual ~MemIndex(){}
+
 
     virtual Status Put(const KeyType & key, const ValueType & value, const bool overwrite) = 0;
 
@@ -22,6 +33,8 @@ public:
     virtual Status Scan(const KeyType & start, const int record_count, ScanHandle & handle) = 0;
     
     virtual Status Delete(const KeyType & key) = 0;
+
+    virtual ScanHandle* GetIterator() = 0; // remember free the handle
 
 	virtual size_t size() = 0;
 };
@@ -39,10 +52,30 @@ public:
     
     virtual Status Delete(const KeyType & key) override;
 
+    virtual ScanHandle* GetIterator()override;
+
     virtual size_t size() override;
 private:
     std::map<KeyType, ValueType> _map;
 	std::mutex _mtx;
+};
+
+class RBTreeScanHandle : public ScanHandle {
+public:
+    RBTreeScanHandle(std::map<KeyType, ValueType>* map);
+
+    RBTreeScanHandle(std::map<KeyType, ValueType>* map, const KeyType & key);
+
+    virtual ~RBTreeScanHandle();
+
+    virtual Status GetKeyValue(KeyType & key, ValueType & value) override;
+
+    virtual bool GetNext() override;
+private:
+    std::map<KeyType, ValueType> * _map = nullptr;
+
+    std::map<KeyType, ValueType>::iterator _iter;
+
 };
 
 } // namespace kv_engine

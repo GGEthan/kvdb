@@ -5,6 +5,8 @@
 
 #include "MemIndex.h"
 
+#include "DBLog.h"
+
 #include <mutex>
 
 #include <condition_variable>
@@ -17,15 +19,14 @@ using std::unique_lock;
 class MemTable {
 public:
 	static MemTable* memTable;
-	static MemTable* immutableTable;
-	
+
+	static MemTable* immutableTable;	
+
 	long id;
 
-    MemTable() { 
-		_index = new RBTree();
-		id = time(NULL);
-	}
-    Status Put(const KeyType & key, const ValueType & value, const bool overwrite);
+    MemTable();
+	
+	Status Put(const KeyType & key, const ValueType & value, const bool overwrite);
 
     Status Get(const KeyType & key, ValueType & value);
 
@@ -33,15 +34,19 @@ public:
     
     Status Delete(const KeyType & key);
 
-	Status ApproximateMemorySize(size_t & size);
+	size_t ApproximateMemorySize();
 
 	Status SafeSetImmutable();
+
+	friend class TableWriter;
 private:
 	static mutex change_mtx;
 	static condition_variable change_cv;
 	
 	MemIndex * _index = nullptr;
 	
+	DBLog * _log = nullptr;
+
 	mutex _size_mtx;
 	size_t _size = 0;
 	
