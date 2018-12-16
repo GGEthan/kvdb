@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include "Meta.h"
+
 namespace kv_engine {
 using std::string;
 class Configuration {
@@ -15,6 +17,8 @@ public:
 	
 	static string DBLOG_NAME;
 	
+	static Meta * meta;
+
 	static void init() {
 		MAX_MEMTABLE_SIZE = 0;
 	}

@@ -4,6 +4,10 @@
 
 #include "Util.h"
 
+#include "TableIO.h"
+
+#include <thread>
+
 namespace kv_engine {
 
 
@@ -18,6 +22,19 @@ MemTable::MemTable() {
 	_log = new DBLog();
 	_log->Open(id);
 }
+
+MemTable::~MemTable() {
+	change_mtx.unlock();
+	// TODO : release resource
+	unique_lock<mutex> ulock(_readers_mtx);
+	while(_readers != 0)
+		_readers_cv.wait(ulock);
+	
+	delete _index;
+
+	delete _log;
+}
+
 bool MemTable::testTableSize() {
 	lock_guard<mutex> guard(_size_mtx);
 	if (!_mutable)
@@ -28,23 +45,6 @@ bool MemTable::testTableSize() {
 		return false;
 	}
 	return true;
-}
-
-void MemTable::setImmutable() {
-	static mutex mtx;
-	lock_guard<mutex> guard(mtx);
-	if (!_mutable)
-		return;
-	unique_lock<mutex> ulock(change_mtx);
-	while (immutableTable != nullptr)
-		change_cv.wait(ulock);
-	
-	// set new MemTable and make this to immutableTable
-	memTable = new MemTable();
-	immutableTable = this;
-	// TODO : persist immutableTable
-
-	_mutable = false;
 }
 
 Status MemTable::SafeSetImmutable() {
@@ -60,7 +60,8 @@ Status MemTable::SetImmutable() {
 	change_mtx.lock(); // try to lock, wait until release the old one
 	immutableTable = this;
 
-	// TODO : persist immutableTable background
+	std::thread write_thread(TableWriter::WriteTableBackgroud, this);
+	write_thread.detach();
 
 	memTable = new MemTable();
 

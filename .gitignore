@@ -5,3 +5,4 @@
 /build/main
 /build/Makefile
 /engine/build/*
+/engine/.vscode/*

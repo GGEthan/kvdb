@@ -3,11 +3,47 @@
 
 #include "Configuration.h"
 
+#include "Meta.h"
+
 #include <fcntl.h>
 
 #include <unistd.h>
 
 namespace kv_engine {
+
+void TableWriter::WriteTableBackgroud(MemTable * mem) {
+    // The begin of the writer thread
+
+    TableWriter writer(mem);
+    
+    writer.Init();
+
+    unique_lock<mutex> ulock(mem->_writers_mtx);
+    while (mem->_writers != 0) {
+        // TODO: add max wait time
+        mem->_writers_cv.wait(ulock);
+    }
+    
+    writer.WriteTable();
+
+    Meta * meta = Configuration::meta;
+    meta->NewSSTable(mem->id, 0);
+
+    delete mem;
+
+    int level = 0;
+    while(true) {
+        if(meta->size(level) > Configuration::COMPACT_SIZE) {
+            // TODO : Compact table here
+
+            meta->Compact(0, 0);
+            level ++;
+        }
+        else
+            break;
+    }
+    
+}
 
 TableWriter::TableWriter(MemTable * mem) {
     _mem = mem;
@@ -78,6 +114,30 @@ Status TableWriter::WriteTable() {
     ::close(_fd);
     _fd = -1;
     return Success;
+}
+
+size_t TableWriter::WriteRecord(const KeyType & key, const ValueType & value) {
+    // [key-size:4 byte][key : key-size byte]
+    // [value-size:4 byte][value: value-size byte]
+    // value-size & (1<<31) != 0 when deleted
+    size_t total_size;
+    unsigned int ksize = key.size();
+    unsigned int vsize = value.size();
+
+    // key
+    total_size += ::write(_fd, &ksize, sizeof(unsigned int));
+    total_size += ::write(_fd, key.data(), ksize);
+
+    // value
+    if (value.removed) {
+        vsize |= 1 << 31;
+        total_size += ::write(_fd, &vsize, sizeof(unsigned int));
+    }
+    else {
+        total_size += ::write(_fd, &vsize, sizeof(unsigned int));
+        total_size += ::write(_fd, value.data(), vsize);
+    }
+    return total_size;
 }
 
 } // namespace kv_engine

@@ -5,6 +5,8 @@
 
 #include "EngineBase.h"
 
+#include "MemIndex.h"
+
 namespace kv_engine {
 
 

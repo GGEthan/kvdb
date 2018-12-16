@@ -10,9 +10,13 @@ namespace kv_engine {
 
 class DBLog {
 public:
+    DBLog(){}
+
+    ~DBLog();
+
     Status Log(const KeyType & key, const ValueType & value);
     
-    Status Open(long _id);
+    Status Open(const long & _id);
 
     Status Recover(MemTable * _mem);
     
@@ -20,6 +24,9 @@ private:
     int _fd = -1; // log file
 
     long id;
+
+    size_t _size = 0;
+    mutex _size_mtx;
 };
 
 }

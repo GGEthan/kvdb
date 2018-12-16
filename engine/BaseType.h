@@ -33,7 +33,7 @@ public:
 
     const char * data() const { return _data;}
     
-    int size() const { return _size;}
+    unsigned int size() const { return _size;}
 
 	int compare(const NoCopyString & that) const{
 		if (that._size == _size)
@@ -59,7 +59,7 @@ public:
 
 protected:
     const char * _data = (const char *)this;
-    size_t _size = 0;
+    unsigned int _size = 0;
 	bool _need_free = false;
 };
 

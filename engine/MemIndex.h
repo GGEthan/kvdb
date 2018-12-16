@@ -43,7 +43,7 @@ public:
 class RBTree : public MemIndex {
 public:
     RBTree(){}
-    virtual ~RBTree(){}
+
 	virtual Status Put(const KeyType & key, const ValueType & value, const bool overwrite) override;
 	
     virtual Status Get(const KeyType & key, ValueType & value) override;

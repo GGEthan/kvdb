@@ -10,6 +10,7 @@ string Configuration::DBLOG_NAME = "DBLOG";
 
 string Configuration::SSTABLE_NAME = "SSTABLE";
 
+Meta * Configuration::meta = nullptr;
 
 
 }

@@ -20,6 +20,8 @@ public:
     Status Init();
 
     Status WriteTable();
+
+    static void WriteTableBackgroud(MemTable * mem);
 private:
     int _fd = -1;
     

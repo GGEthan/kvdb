@@ -26,6 +26,8 @@ public:
 
     MemTable();
 	
+	~MemTable();
+
 	Status Put(const KeyType & key, const ValueType & value, const bool overwrite);
 
     Status Get(const KeyType & key, ValueType & value);
