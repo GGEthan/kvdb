@@ -3,7 +3,11 @@
 
 #include <string>
 
+#include <map>
+
 #include "Meta.h"
+
+#include "TableIO.h"
 
 namespace kv_engine {
 using std::string;
@@ -20,6 +24,8 @@ public:
 	static Meta * meta;
 
 	static string DATA_DIR;
+
+	static std::map<long, TableReader*> TableReaderMap;
 
 	static void init() {
 		MAX_MEMTABLE_SIZE = 0;

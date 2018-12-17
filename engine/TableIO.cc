@@ -34,15 +34,108 @@ void TableWriter::WriteTableBackgroud(MemTable * mem) {
     int level = 0;
     while(true) {
         if(meta->size(level) > Configuration::COMPACT_SIZE) {
-            // TODO : Compact table here
-
-            meta->Compact(0, 0);
+            long id;
+            Status res = CompactSSTable(level, id);
+            if (res != Success) {
+                ERRORLOG("Compact SSTable Fail!!!![%d]", level);
+                return;
+            }
+            Configuration::TableReaderMap[id] = new TableReader(level + 1, id);
+            meta->Compact(level, id);
             level ++;
         }
         else
             break;
     }
     
+}
+
+Status TableWriter::CompactSSTable(int level, long & new_id) {
+    TableReader * readers[32];
+    TableReader::Iterator iters[32];
+    Meta * meta = Configuration::meta;
+
+    auto iter = meta->Level(level);
+    for (int i = 0; i < Configuration::COMPACT_SIZE; i++) {
+        auto table_info = iter.next();
+        if (table_info == nullptr)
+            return FileNotFound;
+        auto reader = Configuration::TableReaderMap.find(table_info->id);
+        if (reader == Configuration::TableReaderMap.end())
+            return FileNotFound;
+        if (reader->second == nullptr)
+            return FileNotFound;
+        readers[i] = reader->second;
+        iters[i] = reader->second->Begin();
+        iters[i].next(); // prepare the first entry
+    }
+
+    long id = time(NULL);
+    TableWriter writer;
+    if (writer.Init(level, id) != Success)
+        return FileNotFound;
+
+    KeyType lastKey;
+    size_t offset = 0;
+    writer._index.resize(0);
+    while(true) {
+        // compact
+        KeyType min;
+        
+        int min_index = -1;
+
+        for (int i = 0; i < Configuration::COMPACT_SIZE; i++) {
+            if (!iters[i].end()) {
+                if (min_index == -1) {
+                    min_index = i;
+                    iters[i].ReadKey(min);
+                }
+                else {
+                    KeyType temp;
+                    iters[i].ReadKey(temp);
+                    // Cannot use <=
+                    if (temp < min) {
+                        min_index = i;
+                        min.replace(temp);
+                    }
+                }
+            }
+        }
+        if (min_index == -1)
+            break;
+        else {
+            if (min == lastKey) {
+                iters[min_index].next();
+                continue;
+            }
+            ValueType min_v;
+            iters[min_index].ReadRecord(min, min_v);
+            writer.WriteRecord(min, min_v);
+            iters[min_index].next();
+            lastKey = min;
+            writer._index.push_back(offset);
+            offset += min.size() + min_v.size() + 2 * sizeof(unsigned int);
+        }
+    }
+
+    // write index
+    
+    size_t index_size = sizeof(size_t) * writer._index.size();
+    size_t res = ::write(writer._fd, writer._index.data(), index_size);
+    if (res != index_size)
+        return IOError;
+    // write foot
+    res = ::write(writer._fd, &index_size, sizeof(size_t));
+    if (res != sizeof(size_t))
+        return IOError;
+    
+    new_id = id;
+
+    return Success;
+}
+
+TableWriter::TableWriter() {
+
 }
 
 TableWriter::TableWriter(MemTable * mem) {
@@ -54,18 +147,21 @@ TableWriter::~TableWriter() {
         ::close(_fd);
 }
 
-Status TableWriter::Init(MemTable * mem) {
-    _mem = mem;
-    return Init();
-}
-
 Status TableWriter::Init() {
     if (_mem == nullptr) {
-        ERRORLOG("Memtable not set in TableWriter");
+        ERRORLOG("MemTable not set.[TableWriter::Init()]");
         return FileNotFound;
     }
+    return Init(_mem);
+}
 
-    std::string file_name = ConcatFileName(Configuration::DATA_DIR, Configuration::SSTABLE_NAME, 0, _mem->id);
+Status TableWriter::Init(MemTable * mem) {
+    _mem = mem;
+    return Init(0, _mem->id);
+}
+
+Status TableWriter::Init(int level, long id) {
+    std::string file_name = ConcatFileName(Configuration::DATA_DIR, Configuration::SSTABLE_NAME, level, id);
     
     int fd = open(file_name.data(), O_WRONLY | O_CREAT, 0777);
     if (fd <= 0) {
@@ -237,6 +333,10 @@ TableReader::Iterator::Iterator(const TableReader::Iterator & that) {
     _offset = that._offset;
 }
 
+void TableReader::Iterator::FromReader(TableReader * reader) {
+    _reader = reader;
+} 
+
 bool TableReader::Iterator::next() {
     if (_offset >= _reader->_index_offset)
         return false;
@@ -247,6 +347,10 @@ bool TableReader::Iterator::next() {
     _offset += 2 * (sizeof(unsigned int)) + _key.size() + _value.size();
 
     return true;
+}
+
+bool TableReader::Iterator::end() {
+    return _offset < _reader->_index_offset;
 }
 
 void TableReader::Iterator::ReadRecord(KeyType & key, ValueType & value) {

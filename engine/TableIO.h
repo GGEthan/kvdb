@@ -11,9 +11,13 @@ namespace kv_engine {
 
 class TableWriter {
 public:
+    TableWriter();
+
     TableWriter(MemTable * mem);
 
     ~TableWriter();
+
+    Status Init(int level, long id);
 
     Status Init(MemTable * mem);
 
@@ -23,7 +27,7 @@ public:
 
     static void WriteTableBackgroud(MemTable * mem);
 
-    static void CompactSSTable(int level);
+    static Status CompactSSTable(int level, long & new_id);
 private:
     int _fd = -1;
     
@@ -51,11 +55,17 @@ public:
 
     class Iterator {
     public:
+        Iterator(){}
+
         Iterator(TableReader* reader);
         
         Iterator(const TableReader::Iterator & that);
+        
+        void FromReader(TableReader * reader);
 
         bool next();
+
+        bool end();
 
         void ReadRecord(KeyType & key, ValueType & value);
 
