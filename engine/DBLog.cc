@@ -50,7 +50,7 @@ Status DBLog::Log(const KeyType & key, const ValueType & value) {
 }
 
 Status DBLog::Open(const long & _id) {
-    string log_name = ConcatFileName(Configuration::DBLOG_NAME, 0, _id);
+    string log_name = ConcatFileName(Configuration::DATA_DIR, Configuration::DBLOG_NAME, 0, _id);
     int fd = ::open(log_name.data(), O_WRONLY | O_CREAT, 0777);
     if (fd <= 0) {
         ERRORLOG("Can't create log file %s.", log_name.data());

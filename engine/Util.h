@@ -47,7 +47,7 @@ void WARNLOG(const char* format, ...);
 
 #include <string>
 
-std::string ConcatFileName(std::string file_head, int level, long id);
+std::string ConcatFileName(std::string dir, std::string file_head, int level, long id);
 
 
 #endif // _ENGINE_UTIL_H_

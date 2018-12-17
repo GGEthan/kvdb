@@ -12,5 +12,5 @@ string Configuration::SSTABLE_NAME = "SSTABLE";
 
 Meta * Configuration::meta = nullptr;
 
-
+string Configuration::DATA_DIR = ".";
 }

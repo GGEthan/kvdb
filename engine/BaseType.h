@@ -19,6 +19,8 @@ public:
 
 	// The only copy method
 	NoCopyString(const NoCopyString & that) {
+		if (_need_free)
+			delete _data;
 		char* tmp = new char[that._size];
 		_size = that._size;
 		memcpy(tmp, that._data, _size);
@@ -55,6 +57,22 @@ public:
 
 	bool operator < (const NoCopyString & that) const {
 		return compare(that) < 0;
+	}
+
+	void replace(const NoCopyString & that) {
+		if (_need_free)
+			delete _data;
+		_data = that._data;
+		_size = that._size;
+		_need_free = false;
+	}
+
+	void assign(const char * src, size_t n) {
+		if (_need_free)
+			delete _data;
+		_data = src;
+		_size = n;
+		_need_free = true;
 	}
 
 protected:

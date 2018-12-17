@@ -48,9 +48,9 @@ void WARNLOG(const char * format, ...) {
     va_end(args);
 }
 
-std::string ConcatFileName(std::string file_head, int level, long id) {
+std::string ConcatFileName(std::string dir, std::string file_head, int level, long id) {
     std::stringstream ss;
-    ss << file_head << "_" << level << "_" << id;
+    ss << dir << "/" << file_head << "_" << level << "_" << id;
     std::string result;
     ss >> result;
     return result;

@@ -19,6 +19,8 @@ public:
 	
 	static Meta * meta;
 
+	static string DATA_DIR;
+
 	static void init() {
 		MAX_MEMTABLE_SIZE = 0;
 	}
