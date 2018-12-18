@@ -2,6 +2,8 @@
 
 #include "Configuration.h"
 
+#include "MemTable.h"
+
 #include <fcntl.h>
 
 #include <unistd.h>
@@ -100,7 +102,7 @@ Status DBLog::Recover(MemTable * _mem, long id) {
             return IOError;
         read_size += sizeof(unsigned int);
         // removed value?
-        if (value_size & 1<31 != 0) {
+        if ((value_size & 1<31) != 0) {
             // removed
             _mem->Delete(key);
             continue;

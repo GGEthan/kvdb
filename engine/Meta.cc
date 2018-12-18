@@ -90,6 +90,7 @@ Status Meta::Compact(int old_level, long new_id) {
     if (old_level == levels)
         levels ++;
     _Persist();
+    return Success;
 }
 
 

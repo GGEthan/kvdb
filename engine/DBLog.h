@@ -5,8 +5,12 @@
 
 #include "Util.h"
 
-#include "MemTable.h"
+#include <mutex>
+
 namespace kv_engine {
+using std::mutex;
+
+class MemTable;
 
 class DBLog {
 public:
@@ -26,6 +30,7 @@ private:
     long id;
 
     size_t _size = 0;
+    
     mutex _size_mtx;
 
 };

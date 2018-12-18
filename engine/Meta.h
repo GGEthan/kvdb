@@ -5,12 +5,12 @@
 namespace kv_engine {
 
 struct SSTABLE_INFO {
-    long id;
+    long id = 0;
     
-    int level;
+    int level = 0;
     
     SSTABLE_INFO(long _id, int _level) : id(_id), level(_level) {}
-    
+    SSTABLE_INFO() {}
     void operator = (const SSTABLE_INFO & that) {
         id = that.id;
   
@@ -21,6 +21,7 @@ struct SSTABLE_INFO {
 // simple implement
 class Meta {
 public:
+    Meta(){ }
     Status NewSSTable(long id, int level);
     
     Status Compact(int old_level, long new_id);

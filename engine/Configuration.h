@@ -13,7 +13,7 @@ namespace kv_engine {
 using std::string;
 class Configuration {
 public:
-	static int MAX_MEMTABLE_SIZE;
+	static size_t MAX_MEMTABLE_SIZE;
 
 	static int COMPACT_SIZE;
 	

@@ -216,7 +216,7 @@ size_t TableWriter::WriteRecord(const KeyType & key, const ValueType & value) {
     // [key-size:4 byte][key : key-size byte]
     // [value-size:4 byte][value: value-size byte]
     // value-size & (1<<31) != 0 when deleted
-    size_t total_size;
+    size_t total_size = 0;
     unsigned int ksize = key.size();
     unsigned int vsize = value.size();
 

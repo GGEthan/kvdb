@@ -12,9 +12,21 @@
 
 #include <vector>
 
+#include <unistd.h>
+
+#include <stdarg.h>
+
+
+const char* LogString[4] = {
+	"\033[1mINFO:\033[0m",
+	"\033[33;1mWARN:\033[0m",
+	"\033[31;1mERROR:\033[0m",
+	"\033[34;1mDEBUG:\033[0m"
+};
+
 void SysLog(const LogMode mode, const char * format, va_list args) {
     char log_buf[512];
-    sprintf(log_buf, "%d %s %s\n", time(NULL), LogString[mode], format);
+    sprintf(log_buf, "%ld %s %s\n", time(NULL), LogString[mode], format);
     //strcat(log_buf, format);
     vprintf(log_buf, args);
 }
@@ -73,23 +85,20 @@ Status SplitFileName(const std::string file_name, std::string & file_head, int &
     return Success;
 }
 
-std::vector<std::string> StringSplit(const std::string & from,const std::string & pattern)
-{
+std::vector<std::string> StringSplit(const std::string & from,const std::string & pattern) {
     std::string::size_type pos;
     std::vector<std::string> result;
     std::string str = from;
 
     str += pattern;//扩展字符串以方便操作
-    int size=str.size();
+    size_t size = str.size();
     
-    for(int i=0; i<size; i++)
-    {
-        pos=str.find(pattern,i);
-        if(pos<size)
-        {
-        std::string s=str.substr(i,pos-i);
-        result.push_back(s);
-        i=pos+pattern.size()-1;
+    for (size_t i = 0; i < size; i++) {
+        pos = str.find(pattern, i);
+        if (pos < size) {
+            std::string s = str.substr(i, pos - i);
+            result.push_back(s);
+            i = pos + pattern.size() - 1;
         }
     }
     return result;

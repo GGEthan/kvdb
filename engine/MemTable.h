@@ -22,7 +22,7 @@ public:
 
 	static MemTable* immutableTable;	
 
-	long id;
+	long id; 
 
     MemTable();
 	

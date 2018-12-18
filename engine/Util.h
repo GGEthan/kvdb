@@ -31,13 +31,6 @@ enum LogMode {
 	Debug
 };
 
-const char* LogString[4] = {
-	"\033[1mINFO:\033[0m",
-	"\033[33;1mWARN:\033[0m",
-	"\033[31;1mERROR:\033[0m",
-	"\033[34;1mDEBUG:\033[0m"
-};
-
 void SysLog(const LogMode mode, const char* format, ...);
 
 void DEBUGLOG(const char* format, ...);
@@ -46,7 +39,7 @@ void ERRORLOG(const char* format, ...);
 void WARNLOG(const char* format, ...);
 
 #include <string>
-
+#include <vector>
 std::string ConcatFileName(std::string dir, std::string file_head, int level, long id);
 
 Status SplitFileName(const std::string file_name, std::string & file_hear, int & level, long & id);

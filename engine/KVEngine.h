@@ -13,7 +13,7 @@ namespace kv_engine {
 class KVEngine : public EngineBase {
 public:
     KVEngine(){}
-    virtual ~KVEngine(){ }
+    virtual ~KVEngine();
     virtual Status Open(const std::string & conf_path) override ;
 
     virtual Status Open(const std::string & log_dir, const std::string & data_dir) override;

@@ -2,9 +2,9 @@
 
 namespace kv_engine {
 
-int Configuration::MAX_MEMTABLE_SIZE = 0;
+size_t Configuration::MAX_MEMTABLE_SIZE = 512;
 
-int Configuration::COMPACT_SIZE = 5;
+int Configuration::COMPACT_SIZE = 2;
 
 string Configuration::DBLOG_NAME = "DBLOG";
 
@@ -12,7 +12,7 @@ string Configuration::SSTABLE_NAME = "SSTABLE";
 
 Meta * Configuration::meta = nullptr;
 
-string Configuration::DATA_DIR = ".";
+string Configuration::DATA_DIR = "./data";
 
 string Configuration::LOG_DIR = "./log";
 

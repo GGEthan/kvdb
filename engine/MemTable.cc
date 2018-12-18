@@ -31,21 +31,23 @@ MemTable::~MemTable() {
 		_readers_cv.wait(ulock);
 	
 	delete _index;
+	
+	_index = nullptr;
 
 	delete _log;
 }
 
-bool MemTable::testTableSize() {
-	lock_guard<mutex> guard(_size_mtx);
-	if (!_mutable)
-		return false;
-	if (_size > Configuration::MAX_MEMTABLE_SIZE){
-		if (_mutable) 
-			setImmutable();
-		return false;
-	}
-	return true;
-}
+// bool MemTable::testTableSize() {
+// 	lock_guard<mutex> guard(_size_mtx);
+// 	if (!_mutable)
+// 		return false;
+// 	if (_size > Configuration::MAX_MEMTABLE_SIZE){
+// 		if (_mutable) 
+// 			setImmutable();
+// 		return false;
+// 	}
+// 	return true;
+// }
 
 Status MemTable::SafeSetImmutable() {
 	static mutex mtx;

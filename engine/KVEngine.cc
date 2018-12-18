@@ -11,6 +11,14 @@
 #include <list>
 namespace kv_engine {
 using std::string;
+
+KVEngine::~KVEngine() {
+    MemTable * _mem = MemTable::memTable;
+    MemTable::memTable = nullptr;
+
+    TableWriter::WriteTableBackgroud(_mem);
+    INFOLOG("886");
+}
 Status KVEngine::Open(const std::string & conf_path) {
     return UnknownError;
 }
@@ -19,22 +27,49 @@ Status KVEngine::Open(const std::string & log_dir, const std::string & data_dir)
 
     Configuration::LOG_DIR = log_dir;
     Configuration::DATA_DIR = data_dir;
-    // recover meta 
-    Configuration::meta->Deserialize((data_dir + "/meta").data());
-    // create MemTbale
-    MemTable::memTable = new MemTable();
-    // log
-    DIR* _log_dir = opendir(log_dir.data());
-    if (_log_dir == NULL) {
-        if (::mkdir(log_dir.data(), 0777) == 0) {
-            ERRORLOG("Can't create dir %s", log_dir.data());
+    Configuration::meta = new Meta();
+    // Open data file
+    DIR* _data_dir = opendir(data_dir.data());
+    if (_data_dir == NULL) {
+        if (::mkdir(data_dir.data(), 0777) != 0) {
+            ERRORLOG("Can't create dir %s", data_dir.data());
             return FileNotFound;
         }
     } else {
+        // search data file
+        dirent * entry;
+        while ((entry = readdir(_data_dir)) != nullptr) {
+            string file_name(entry->d_name);
+            int level;
+            long id;
+            string file_head;
+            if (SplitFileName(file_name, file_head, level, id) != Success)
+                continue;
+            if (file_head != Configuration::SSTABLE_NAME)
+                continue;
+            TableReader* new_reader = new TableReader(level, id);
+            Configuration::TableReaderMap[id] = new_reader;
+        }
+    }
+    // recover meta 
+    Configuration::meta->Deserialize((data_dir + "/meta").data());
+    // log
+    // create MemTbale
+    DIR* _log_dir = opendir(log_dir.data());
+    if (_log_dir == NULL) {
+        if (::mkdir(log_dir.data(), 0777) != 0) {
+            ERRORLOG("Can't create dir %s", log_dir.data());
+            return FileNotFound;
+        }
+        // create MemTbale
+        MemTable::memTable = new MemTable();
+    } else {
+        // create MemTbale
+        MemTable::memTable = new MemTable();
         // search log file
         dirent * entry;
         std::list<std::string> entry_list;
-        while (entry = readdir(_log_dir)) {
+        while ((entry = readdir(_log_dir)) != nullptr) {
             string entry_name(entry->d_name);
             entry_list.push_back(entry_name);
         }
@@ -55,29 +90,6 @@ Status KVEngine::Open(const std::string & log_dir, const std::string & data_dir)
         }
     }
 
-    // Open data file
-    DIR* _data_dir = opendir(data_dir.data());
-    if (_data_dir == NULL) {
-        if (::mkdir(data_dir.data(), 0777) == 0) {
-            ERRORLOG("Can't create dir %s", data_dir.data());
-            return FileNotFound;
-        }
-    } else {
-        // search data file
-        dirent * entry;
-        while (entry = readdir(_data_dir)) {
-            string file_name(entry->d_name);
-            int level;
-            long id;
-            string file_head;
-            if (SplitFileName(file_name, file_head, level, id) != Success)
-                continue;
-            if (file_head != Configuration::SSTABLE_NAME)
-                continue;
-            TableReader* new_reader = new TableReader(level, id);
-            Configuration::TableReaderMap[id] = new_reader;
-        }
-    }
     return Success;
 }
 
@@ -115,7 +127,7 @@ Status KVEngine::Get(const KeyType & key, ValueType & value) {
 
     // read SSTables
     SSTABLE_INFO* info = nullptr;
-    while(info = iter.next()) {
+    while((info = iter.next()) != nullptr) {
         TableReader * reader = Configuration::TableReaderMap[info->id];
         res = reader->Find(key, value);
         if (res == Success) {

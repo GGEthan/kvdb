@@ -72,8 +72,11 @@ Status RBTreeScanHandle::GetKeyValue(KeyType & key, ValueType & value) {
 	if (_iter == _map->end()) {
 		return KeyNotFound;
 	}
-	key = _iter->first;
-	value = _iter->second;
+	// key = _iter->first;
+	// value = _iter->second;
+	key.replace(_iter->first);
+	key.replace(_iter->second);
+	return Success;
 }
 
 bool RBTreeScanHandle::GetNext() {

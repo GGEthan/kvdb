@@ -9,16 +9,6 @@
 
 namespace kv_engine {
 
-class ScanHandle {
-public:
-    ScanHandle(){}
-    virtual ~ScanHandle(){}
-
-    virtual Status GetKeyValue(KeyType & key, ValueType & value) = 0;
-
-    virtual bool GetNext() = 0;
-
-};
 // ThreadSafe Index
 class MemIndex {
 public:

@@ -85,12 +85,23 @@ typedef NoCopyString KeyType;
 
 class ValueType : public NoCopyString {
 public :
-	bool removed = false;
-	ValueType(){ }
+	bool removed;
+	ValueType(){removed = false;}
 	ValueType(const ValueType & that) : removed(that.removed), NoCopyString(that){ }
+	ValueType(const string & str) : removed(false), NoCopyString(str) { }
+	ValueType(const bool & _removed) : removed(_removed) { }
+	ValueType(const char * str) : removed(false), NoCopyString(str) { }
 };
 
+class ScanHandle {
+public:
+    ScanHandle(){}
+    virtual ~ScanHandle(){}
 
+    virtual Status GetKeyValue(KeyType & key, ValueType & value) = 0;
+
+    virtual bool GetNext() = 0;
+};
 
 } // namespace kv_engine
 #endif // _ENGINE_BASE_TYPE_H_
