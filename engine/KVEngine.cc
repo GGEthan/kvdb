@@ -4,10 +4,81 @@
 
 #include "Configuration.h"
 
-namespace kv_engine {
+#include <dirent.h>
 
-Status KVEngine::Open(std::string conf_path) {
+#include <sys/stat.h>
+
+#include <list>
+namespace kv_engine {
+using std::string;
+Status KVEngine::Open(const std::string & conf_path) {
     return UnknownError;
+}
+
+Status KVEngine::Open(const std::string & log_dir, const std::string & data_dir) {
+
+    Configuration::LOG_DIR = log_dir;
+    Configuration::DATA_DIR = data_dir;
+    // recover meta 
+    Configuration::meta->Deserialize((data_dir + "/meta").data());
+    // create MemTbale
+    MemTable::memTable = new MemTable();
+    // log
+    DIR* _log_dir = opendir(log_dir.data());
+    if (_log_dir == NULL) {
+        if (::mkdir(log_dir.data(), 0777) == 0) {
+            ERRORLOG("Can't create dir %s", log_dir.data());
+            return FileNotFound;
+        }
+    } else {
+        // search log file
+        dirent * entry;
+        std::list<std::string> entry_list;
+        while (entry = readdir(_log_dir)) {
+            string entry_name(entry->d_name);
+            entry_list.push_back(entry_name);
+        }
+        closedir(_log_dir);
+
+        for(auto iter:entry_list) {
+            int level;
+            long id;
+            string file_head;
+            if (SplitFileName(iter, file_head, level, id) != Success)
+                continue;
+            if (file_head != Configuration::DBLOG_NAME) 
+                continue;
+            // recover log file
+            DBLog::Recover(MemTable::memTable, id);
+            if (MemTable::memTable->ApproximateMemorySize() >= Configuration::MAX_MEMTABLE_SIZE)
+                MemTable::memTable->SafeSetImmutable();
+        }
+    }
+
+    // Open data file
+    DIR* _data_dir = opendir(data_dir.data());
+    if (_data_dir == NULL) {
+        if (::mkdir(data_dir.data(), 0777) == 0) {
+            ERRORLOG("Can't create dir %s", data_dir.data());
+            return FileNotFound;
+        }
+    } else {
+        // search data file
+        dirent * entry;
+        while (entry = readdir(_data_dir)) {
+            string file_name(entry->d_name);
+            int level;
+            long id;
+            string file_head;
+            if (SplitFileName(file_name, file_head, level, id) != Success)
+                continue;
+            if (file_head != Configuration::SSTABLE_NAME)
+                continue;
+            TableReader* new_reader = new TableReader(level, id);
+            Configuration::TableReaderMap[id] = new_reader;
+        }
+    }
+    return Success;
 }
 
 
@@ -22,7 +93,39 @@ Status KVEngine::Put(const KeyType & key, const ValueType & value, const bool ov
 }
 
 Status KVEngine::Get(const KeyType & key, ValueType & value) {
-    return UnknownError;
+    Meta * meta = Configuration::meta;
+    Meta::Iterator iter = meta->Begin();
+    // read memTable first
+    Status res = MemTable::memTable->Get(key, value);
+    if (res == Success) {
+        if (value.removed)
+            return KeyNotFound;
+        return Success;
+    }
+
+    // read ImmutMemTable
+    if (MemTable::immutableTable != nullptr) {
+        res = MemTable::immutableTable->Get(key, value);
+        if (res == Success) {
+            if (value.removed)
+                return KeyNotFound;
+            return Success;
+        }
+    }
+
+    // read SSTables
+    SSTABLE_INFO* info = nullptr;
+    while(info = iter.next()) {
+        TableReader * reader = Configuration::TableReaderMap[info->id];
+        res = reader->Find(key, value);
+        if (res == Success) {
+            if (value.removed)
+                return KeyNotFound;
+            return Success;
+        }
+    }
+
+    return KeyNotFound;
 }
 
 Status KVEngine::Scan(const KeyType & start, const int record_count, ScanHandle & handle) {

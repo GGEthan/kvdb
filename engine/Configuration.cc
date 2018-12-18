@@ -14,5 +14,7 @@ Meta * Configuration::meta = nullptr;
 
 string Configuration::DATA_DIR = ".";
 
+string Configuration::LOG_DIR = "./log";
+
 std::map<long, TableReader*> Configuration::TableReaderMap;
 }

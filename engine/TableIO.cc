@@ -324,6 +324,10 @@ Status TableReader::_ReadRecord(size_t offset, KeyType & key, ValueType & value)
     return Success;
 }
 
+Status TableReader::Find(const KeyType & key, ValueType & value) {
+    return _BinarySearch(key, value);
+}
+
 TableReader::Iterator::Iterator(TableReader * reader) {
     _reader = reader;
 }
@@ -350,7 +354,7 @@ bool TableReader::Iterator::next() {
 }
 
 bool TableReader::Iterator::end() {
-    return _offset < _reader->_index_offset;
+    return _offset >= _reader->_index_offset;
 }
 
 void TableReader::Iterator::ReadRecord(KeyType & key, ValueType & value) {
@@ -360,6 +364,85 @@ void TableReader::Iterator::ReadRecord(KeyType & key, ValueType & value) {
 
 void TableReader::Iterator::ReadKey(KeyType & key) {
     key.replace(_key);
+}
+
+Status TableReader::_ReadIndex(int n, size_t & index) {
+    off_t offset = _index_offset + sizeof(size_t) * n;
+    if (_index_offset >= _size - sizeof(size_t))
+        return IOError;
+    if (::pread(_fd, &index, sizeof(size_t), offset) != sizeof(size_t))
+        return IOError;
+    return Success;
+}
+
+Status TableReader::_ReadKey(size_t offset, KeyType & key) {
+    if (offset >= _index_offset)
+        return IOError;
+    unsigned int key_size;
+    char* buf;
+    size_t res = ::pread(_fd, &key_size, sizeof(unsigned int), offset);
+    if (res != sizeof(unsigned int))
+        return IOError;
+    buf = new char[key_size];
+    key.assign(buf, key_size);
+
+    res = ::pread(_fd, buf, key_size, offset + sizeof(unsigned int));
+    if (res != key_size)
+        return IOError;
+    return Success;
+}
+
+Status TableReader::_ReadValue(size_t offset, ValueType & value) {
+    if (offset >= _index_offset)
+        return IOError;
+    unsigned int value_size;
+    char* buf;
+    size_t res = ::pread(_fd, &value_size, sizeof(unsigned int), offset);
+    if (res != sizeof(unsigned int))
+        return IOError;
+    if (value_size & (1<<31) != 0) {
+        //removed
+        value.removed = true;
+    }
+    else {
+        buf = new char[value_size];
+        value.assign(buf, value_size);
+        res = ::pread(_fd, &buf, value_size, offset + sizeof(unsigned int));
+        if (res != value_size)
+            return IOError;
+    }
+    return Success;
+}
+
+Status TableReader::_ReadKeyWithIndex(int index, KeyType & key, size_t & offset) {
+    if (_ReadIndex(index, offset) != Success)
+        return IOError;
+    if (_ReadKey(offset, key) != Success)
+        return IOError;
+    return Success;
+}
+
+Status TableReader::_BinarySearch(const KeyType & key, ValueType & value) {
+    KeyType mid_key;
+    size_t offset;
+    int index_count = (_size - _index_offset - sizeof(size_t)) / sizeof(size_t);
+    int left = 0, right = index_count - 1;
+    while (left <= right) {
+        int mid = left + ((right - left) >> 1);
+        if (_ReadKeyWithIndex(mid, mid_key, offset) != Success)
+            return IOError;
+        int cmp = mid_key.compare(key);
+        if (cmp > 0) // mid > k
+            right = mid - 1;
+        else if (cmp < 0) // mid < k
+            left = mid + 1;
+        else {
+            if (_ReadValue(offset + sizeof(unsigned int) + mid_key.size(), value) != Success)
+                return IOError;
+            return Success;
+        }      
+    }
+    return KeyNotFound;
 }
 
 } // namespace kv_engine

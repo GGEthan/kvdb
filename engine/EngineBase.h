@@ -12,7 +12,9 @@ public:
 
     virtual ~EngineBase(){}
 
-    virtual Status Open(std::string config_path) = 0;
+    virtual Status Open(const std::string & config_path) = 0;
+
+    virtual Status Open(const std::string & log_dir, const std::string & data_dir) = 0;
 
     virtual Status Put(const KeyType & key, const ValueType & value, const bool overwrite) = 0;
 

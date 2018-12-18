@@ -25,6 +25,8 @@ public:
 
 	static string DATA_DIR;
 
+	static string LOG_DIR;
+
 	static std::map<long, TableReader*> TableReaderMap;
 
 	static void init() {

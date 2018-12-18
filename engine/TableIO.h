@@ -98,9 +98,16 @@ private:
     // NOT Safe !!!
     Status _ReadRecord(size_t offset, KeyType & key, ValueType & value);
 
+    Status _ReadIndex(int n, size_t & index);
+
     Status _ReadKey(size_t offset, KeyType & key);
     
-    Status _BinarySearch();
+    Status _ReadValue(size_t offset, ValueType & value);
+
+    Status _ReadKeyWithIndex(int index, KeyType & key, size_t & offset);
+
+    Status _BinarySearch(const KeyType & key, ValueType & value);
+
 };
 
 } // namespace kv_engine

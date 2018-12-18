@@ -49,5 +49,7 @@ void WARNLOG(const char* format, ...);
 
 std::string ConcatFileName(std::string dir, std::string file_head, int level, long id);
 
+Status SplitFileName(const std::string file_name, std::string & file_hear, int & level, long & id);
 
+std::vector<std::string> StringSplit(const std::string & from,const std::string & pattern);
 #endif // _ENGINE_UTIL_H_

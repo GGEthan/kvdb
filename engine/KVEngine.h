@@ -14,7 +14,9 @@ class KVEngine : public EngineBase {
 public:
     KVEngine(){}
     virtual ~KVEngine(){ }
-    virtual Status Open(std::string conf_path) override ;
+    virtual Status Open(const std::string & conf_path) override ;
+
+    virtual Status Open(const std::string & log_dir, const std::string & data_dir) override;
 
     virtual Status Put(const KeyType & key, const ValueType & value, const bool overwrite) override;
 

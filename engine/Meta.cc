@@ -29,12 +29,17 @@ SSTABLE_INFO * Meta::Iterator::next() {
 }
 
 Status Meta::Deserialize(const char * path) {
-    int fd = open(path, O_RDWR);
+    int fd = open(path, O_RDWR | O_CREAT, 0777);
     if (fd <= 0) {
         ERRORLOG("Can't open meta file %s.", path);
         return FileNotFound;
     }
     _fd = fd;
+    if (lseek(fd, 0, SEEK_END) == 0) {
+        INFOLOG("Create Meta file %s", path);
+        _Persist();
+        return Success;
+    }
     int res = read(_fd, this, sizeof(Meta));
     if (res != sizeof(Meta)) {
         ERRORLOG("Read meta file %s fail. [%d]", path, res);

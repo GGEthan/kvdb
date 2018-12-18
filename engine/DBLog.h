@@ -18,7 +18,7 @@ public:
     
     Status Open(const long & _id);
 
-    Status Recover(MemTable * _mem);
+    static Status Recover(MemTable * _mem, long id);
     
 private:
     int _fd = -1; // log file
@@ -27,6 +27,7 @@ private:
 
     size_t _size = 0;
     mutex _size_mtx;
+
 };
 
 }
