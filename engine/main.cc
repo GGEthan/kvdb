@@ -62,17 +62,25 @@ void CreateData(int size) {
 
 int main() {
     kv_engine::EngineBase* engine = new kv_engine::KVEngine();
-    engine->Open("Log", "Data");
-
-    CreateData(20);
-    // engine->Put("abc", "abcdefg", true);
-
-    // engine->Put("ccc", "ccccc", true);
-    for (auto iter : KVMAP) {
-        engine->Put(iter.first, iter.second, true);
-        cout << "Put : " << iter.first << endl;
+    Status open = engine->Open("Log", "Data");
+    if (open != Success) {
+        cout << "Open error :" << open << endl;
+        return 1;
     }
+    cout << "Open Engine..." << endl;
 
+    cout << "Creating Test Data..." << endl;
+    CreateData(20000);
+
+    cout << "Write Test:" << endl;
+    for (auto iter : KVMAP) { 
+        Status res = engine->Put(iter.first, iter.second, true);
+        if (res != Success) {
+            cout << "Write error " << res <<" with key:" << iter.first << endl;
+        }
+    }
+    cout << "Finish Write Test" << endl;
+    cout << "Read Test:" << endl;
     for (auto iter : KVMAP) {
         kv_engine::ValueType value;
         Status res;
@@ -82,12 +90,15 @@ int main() {
             continue;
         }
         if (ValueFromKey(iter.first) != string(value.data(), value.size())) {
-            cout << "Wrong Value. key:" << iter.first <<" value:" << ValueFromKey(iter.first)
+            cout << "Wrong Value. key:" << iter.first// <<" value:" << ValueFromKey(iter.first)
                  << " get:" << string(value.data(), value.size()) << endl;
+           // engine->Get(iter.first, value);
         } else{
-            cout << "OK! " << iter.first << endl;
         }
     }
+    cout << "Finish Read Test" << endl;
+
+    cout << "Closing Engine..." << endl;
 
     delete engine;
 

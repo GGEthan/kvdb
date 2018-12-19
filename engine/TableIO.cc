@@ -13,6 +13,14 @@ namespace kv_engine {
 
 void TableWriter::WriteTableBackgroud(MemTable * mem) {
     // The begin of the writer thread
+    SafeWriteBackground(mem);
+    
+    delete mem;
+
+    TryToCompactSSTable();
+}
+
+void TableWriter::SafeWriteBackground(MemTable * mem) {
 
     unique_lock<mutex> ulock(mem->_writers_mtx);
     while (mem->_writers != 0) {
@@ -32,9 +40,6 @@ void TableWriter::WriteTableBackgroud(MemTable * mem) {
     Meta * meta = Configuration::meta;
     meta->NewSSTable(mem->id, 0);
 
-    delete mem;
-
-    TryToCompactSSTable();
 }
 
 void TableWriter::TryToCompactSSTable() {
@@ -47,10 +52,12 @@ void TableWriter::TryToCompactSSTable() {
             long id;
             Status res = CompactSSTable(level, id);
             if (res != Success) {
-                ERRORLOG("Compact SSTable Fail!!!![%d]", level);
+                ERRORLOG("Compact SSTable Fail!!!![%d, errorn:%d]", level, res);
                 return;
             }
-            Configuration::TableReaderMap[id] = new TableReader(level + 1, id);
+            TableReader * new_reader = new TableReader(level + 1, id);
+            new_reader->Init();
+            Configuration::TableReaderMap[id] = new_reader; 
             meta->Compact(level, id);
             level ++;
         }
@@ -81,8 +88,10 @@ Status TableWriter::CompactSSTable(int level, long & new_id) {
 
     long id = Configuration::meta->new_id();
     TableWriter writer;
-    if (writer.Init(level + 1, id) != Success)
+    if (writer.Init(level + 1, id) != Success) {
+        ERRORLOG("Can't init writer level:%d, id:%ld", level + 1, id);
         return FileNotFound;
+    }
 
     KeyType lastKey;
     size_t offset = 0;
@@ -179,7 +188,7 @@ Status TableWriter::Init(int level, long id) {
         return IOError;
     }
     _fd = fd;
-
+    return Success;
 }
 
 Status TableWriter::WriteTable() {
@@ -255,6 +264,20 @@ TableReader::TableReader() {
 
 }
 
+TableReader::~TableReader() {
+    unique_lock<mutex> ulock(_readers_mtx);
+    while(_readers != 0)
+        _readers_cv.wait(ulock);
+}
+
+Status TableReader::Remove() {
+    if (_fd > 0)
+        ::close(_fd);
+    string file_name = ConcatFileName(Configuration::DATA_DIR, Configuration::SSTABLE_NAME, _level, _id);
+    ::remove(file_name.data());
+    return Success;
+}
+
 Status TableReader::Init(int level, long id) {
     _level = level;
     _id = id;
@@ -314,7 +337,7 @@ Status TableReader::_ReadRecord(size_t offset, KeyType & key, ValueType & value)
         delete key_buf;
         return IOError;
     }
-    if ((value_size & 1<31) != 0) {
+    if ((value_size & (1<<31)) != 0) {
         // removed
         key.assign(key_buf, key_size);
         value.removed = true;
@@ -335,7 +358,19 @@ Status TableReader::_ReadRecord(size_t offset, KeyType & key, ValueType & value)
 }
 
 Status TableReader::Find(const KeyType & key, ValueType & value) {
-    return _BinarySearch(key, value);
+    _readers_mtx.lock();
+    _readers ++;
+    _readers_mtx.unlock();
+
+    Status res =  _BinarySearch(key, value);
+
+    _readers_mtx.lock();
+    _readers --;
+    if (_readers == 0)
+        _readers_cv.notify_all();
+    _readers_mtx.unlock();
+
+    return res;
 }
 
 TableReader::Iterator::Iterator(TableReader * reader) {
@@ -352,9 +387,11 @@ void TableReader::Iterator::FromReader(TableReader * reader) {
 } 
 
 bool TableReader::Iterator::next() {
-    if (_offset >= _reader->_index_offset)
+    if (_offset >= _reader->_index_offset) {
+        _offset ++;
         return false;
-
+    }
+        
     if (_reader->_ReadRecord(_offset, _key, _value) != Success)
         return false;
 
@@ -367,7 +404,7 @@ bool TableReader::Iterator::next() {
 }
 
 bool TableReader::Iterator::end() {
-    return _offset >= _reader->_index_offset;
+    return _offset > _reader->_index_offset;
 }
 
 void TableReader::Iterator::ReadRecord(KeyType & key, ValueType & value) {

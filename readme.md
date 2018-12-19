@@ -2,15 +2,18 @@
 
 ### Software Engineering Course Project
 
-## How to compile/build
-```
- cd ./build
+## KV Engine
 
- cmake .
+### How to build?
 
- make
 ```
-## How to use
+$ cd ./engine/build
+$ cmake .
+$ make
 ```
-./main TestData/config.conf
+
+### How to use?
+
+```
+$ ./main
 ```

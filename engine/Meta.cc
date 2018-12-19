@@ -6,6 +6,12 @@
 
 #include <fcntl.h>
 
+#include <list>
+
+#include <errno.h>
+
+#include <string.h>
+
 namespace kv_engine {
 
 Meta::Iterator Meta::Begin() {
@@ -49,6 +55,7 @@ Status Meta::Deserialize(const char * path) {
         ERRORLOG("Read meta file %s fail. [%d]", path, res);
         return IOError;
     }
+    _fd = fd;
     return Success;
 }
 
@@ -60,6 +67,7 @@ Status Meta::_Persist() {
     int res = pwrite(_fd, this, sizeof(Meta), 0);
     if (res != sizeof(Meta)) {
         ERRORLOG("Can't persist meta file.[size %d]", res);
+        ERRORLOG("%s", strerror(errno));
         return IOError;
     }
     return Success;
@@ -92,14 +100,28 @@ Status Meta::Compact(int old_level, long new_id) {
         ERRORLOG("Meta::Compact size[%d]=%d", old_level, sizes[old_level]);
         return UnknownError;
     }
-    for (int i = Configuration::COMPACT_SIZE; i < sizes[old_level]; i++)
+    std::list<long> old_ids;
+    for (int i = 0; i < Configuration::COMPACT_SIZE; i++)
+        old_ids.push_back(sstable_info[old_level][i].id);
+    
+    for (int i = Configuration::COMPACT_SIZE; i < sizes[old_level]; i++) 
         sstable_info[old_level][i - Configuration::COMPACT_SIZE] = sstable_info[old_level][i];
+    
     sizes[old_level] -= Configuration::COMPACT_SIZE;
-    sizes[old_level + 1] ++;
     sstable_info[old_level + 1][sizes[old_level + 1]] = SSTABLE_INFO(new_id, old_level + 1);
+    sizes[old_level + 1] ++;
+
     if (old_level == levels)
         levels ++;
     _Persist();
+    
+    for(long old_id : old_ids) {
+        TableReader * old_reader = Configuration::TableReaderMap[old_id];
+        Configuration::TableReaderMap.erase(old_id);
+        old_reader->Remove();
+        delete old_reader;
+    }
+
     return Success;
 }
 

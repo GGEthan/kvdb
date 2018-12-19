@@ -130,7 +130,12 @@ Status KVEngine::Get(const KeyType & key, ValueType & value) {
     // read SSTables
     SSTABLE_INFO* info = nullptr;
     while((info = iter.next()) != nullptr) {
-        TableReader * reader = Configuration::TableReaderMap[info->id];
+        auto find = Configuration::TableReaderMap.find(info->id);
+        if (find == Configuration::TableReaderMap.end())
+            continue;
+        TableReader * reader = find->second;
+        if (reader == nullptr)
+            continue;
         res = reader->Find(key, value);
         if (res == Success) {
             if (value.removed)

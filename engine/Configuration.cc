@@ -2,9 +2,9 @@
 
 namespace kv_engine {
 
-size_t Configuration::MAX_MEMTABLE_SIZE = 512;
+size_t Configuration::MAX_MEMTABLE_SIZE = 512000;
 
-int Configuration::COMPACT_SIZE = 2;
+int Configuration::COMPACT_SIZE = 5;
 
 string Configuration::DBLOG_NAME = "DBLOG";
 

@@ -27,6 +27,8 @@ public:
 
     static void WriteTableBackgroud(MemTable * mem);
 
+    static void SafeWriteBackground(MemTable * mem);
+    
     static void TryToCompactSSTable();
 
     static Status CompactSSTable(int level, long & new_id);
@@ -55,6 +57,7 @@ public:
 
     Status Init();
 
+    Status Remove();
     class Iterator {
     public:
         Iterator(){}
@@ -97,6 +100,13 @@ private:
     off_t _index_offset = -1;
 
     size_t _size = -1;
+
+    int _readers = 0;
+
+    mutex _readers_mtx;
+
+    condition_variable _readers_cv;
+
     // NOT Safe !!!
     Status _ReadRecord(size_t offset, KeyType & key, ValueType & value);
 
