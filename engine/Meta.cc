@@ -16,6 +16,10 @@ Meta::Iterator Meta::Level(int _level) {
     return Meta::Iterator(this, _level);
 }
 
+long Meta::new_id() {
+    return _id_count++;
+}
+
 SSTABLE_INFO * Meta::Iterator::next() {
     // TODO : thread safe
     if (parent->sizes[level] <= target) {
@@ -40,7 +44,7 @@ Status Meta::Deserialize(const char * path) {
         _Persist();
         return Success;
     }
-    int res = read(_fd, this, sizeof(Meta));
+    int res = pread(_fd, this, sizeof(Meta), 0);
     if (res != sizeof(Meta)) {
         ERRORLOG("Read meta file %s fail. [%d]", path, res);
         return IOError;
@@ -66,6 +70,12 @@ Status Meta::Persist() {
 }
 
 Status Meta::NewSSTable(long id, int level) {
+    string file_name = ConcatFileName(Configuration::DATA_DIR, Configuration::SSTABLE_NAME, level, id);
+    if (Configuration::TableReaderMap.find(id) == Configuration::TableReaderMap.end()) {
+        TableReader * new_reader = new TableReader(level, id);
+        new_reader->Init();
+        Configuration::TableReaderMap[id] = new_reader;
+    }
     sstable_info[level][sizes[level]].id = id;
     sstable_info[level][sizes[level]].level = level;
     sizes[level] ++;

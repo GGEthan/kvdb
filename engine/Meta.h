@@ -53,6 +53,8 @@ public:
 
     SSTABLE_INFO* FirstTable(int _level) {return sstable_info[_level];}
 
+    long new_id();
+
     friend class Meta::Iterator;
 private:
     SSTABLE_INFO sstable_info[100][100];
@@ -63,6 +65,8 @@ private:
 
     int _fd = -1;
    
+    long _id_count = 0;
+
     Status _Persist();
 };
 

@@ -27,6 +27,8 @@ public:
 
     static void WriteTableBackgroud(MemTable * mem);
 
+    static void TryToCompactSSTable();
+
     static Status CompactSSTable(int level, long & new_id);
 private:
     int _fd = -1;

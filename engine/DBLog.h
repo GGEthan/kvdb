@@ -27,7 +27,7 @@ public:
 private:
     int _fd = -1; // log file
 
-    long id;
+    long _id;
 
     size_t _size = 0;
     

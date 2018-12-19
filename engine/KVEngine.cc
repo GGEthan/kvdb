@@ -48,6 +48,8 @@ Status KVEngine::Open(const std::string & log_dir, const std::string & data_dir)
             if (file_head != Configuration::SSTABLE_NAME)
                 continue;
             TableReader* new_reader = new TableReader(level, id);
+            if (new_reader->Init() != Success)
+                return FileNotFound;
             Configuration::TableReaderMap[id] = new_reader;
         }
     }

@@ -14,15 +14,18 @@ namespace kv_engine {
 void TableWriter::WriteTableBackgroud(MemTable * mem) {
     // The begin of the writer thread
 
-    TableWriter writer(mem);
-    
-    writer.Init();
-
     unique_lock<mutex> ulock(mem->_writers_mtx);
     while (mem->_writers != 0) {
         // TODO: add max wait time
         mem->_writers_cv.wait(ulock);
     }
+    if (mem->ApproximateMemorySize() == 0) {
+        delete mem;
+        return;
+    }
+    TableWriter writer(mem);
+    
+    writer.Init();
     
     writer.WriteTable();
 
@@ -31,6 +34,13 @@ void TableWriter::WriteTableBackgroud(MemTable * mem) {
 
     delete mem;
 
+    TryToCompactSSTable();
+}
+
+void TableWriter::TryToCompactSSTable() {
+    static mutex mtx;
+    lock_guard<mutex> guard(mtx);
+    Meta * meta = Configuration::meta;
     int level = 0;
     while(true) {
         if(meta->size(level) > Configuration::COMPACT_SIZE) {
@@ -47,7 +57,6 @@ void TableWriter::WriteTableBackgroud(MemTable * mem) {
         else
             break;
     }
-    
 }
 
 Status TableWriter::CompactSSTable(int level, long & new_id) {
@@ -70,9 +79,9 @@ Status TableWriter::CompactSSTable(int level, long & new_id) {
         iters[i].next(); // prepare the first entry
     }
 
-    long id = time(NULL);
+    long id = Configuration::meta->new_id();
     TableWriter writer;
-    if (writer.Init(level, id) != Success)
+    if (writer.Init(level + 1, id) != Success)
         return FileNotFound;
 
     KeyType lastKey;
@@ -108,11 +117,12 @@ Status TableWriter::CompactSSTable(int level, long & new_id) {
                 iters[min_index].next();
                 continue;
             }
+            lastKey.copy(min);
             ValueType min_v;
             iters[min_index].ReadRecord(min, min_v);
             writer.WriteRecord(min, min_v);
             iters[min_index].next();
-            lastKey = min;
+            
             writer._index.push_back(offset);
             offset += min.size() + min_v.size() + 2 * sizeof(unsigned int);
         }
@@ -162,7 +172,7 @@ Status TableWriter::Init(MemTable * mem) {
 
 Status TableWriter::Init(int level, long id) {
     std::string file_name = ConcatFileName(Configuration::DATA_DIR, Configuration::SSTABLE_NAME, level, id);
-    
+    INFOLOG("Writing %s", file_name.data());
     int fd = open(file_name.data(), O_WRONLY | O_CREAT, 0777);
     if (fd <= 0) {
         ERRORLOG("Cannot create file %s.", file_name.data());
@@ -304,7 +314,7 @@ Status TableReader::_ReadRecord(size_t offset, KeyType & key, ValueType & value)
         delete key_buf;
         return IOError;
     }
-    if (value_size & 1<31 != 0) {
+    if ((value_size & 1<31) != 0) {
         // removed
         key.assign(key_buf, key_size);
         value.removed = true;
@@ -312,7 +322,7 @@ Status TableReader::_ReadRecord(size_t offset, KeyType & key, ValueType & value)
     else {
         value_buf = new char[value_size];
         res = pread(_fd, value_buf, value_size, offset + sizeof(unsigned int) * 2 + key_size);
-        if (res != sizeof(value_size)) {
+        if (res != value_size) {
             delete key_buf;
             delete value_buf;
             return IOError;
@@ -348,7 +358,10 @@ bool TableReader::Iterator::next() {
     if (_reader->_ReadRecord(_offset, _key, _value) != Success)
         return false;
 
-    _offset += 2 * (sizeof(unsigned int)) + _key.size() + _value.size();
+    if (_value.removed)
+        _offset += 2 * (sizeof(unsigned int)) + _key.size();
+    else
+        _offset += 2 * (sizeof(unsigned int)) + _key.size() + _value.size();
 
     return true;
 }
@@ -400,14 +413,14 @@ Status TableReader::_ReadValue(size_t offset, ValueType & value) {
     size_t res = ::pread(_fd, &value_size, sizeof(unsigned int), offset);
     if (res != sizeof(unsigned int))
         return IOError;
-    if (value_size & (1<<31) != 0) {
+    if ((value_size & (1<<31)) != 0) {
         //removed
         value.removed = true;
     }
     else {
         buf = new char[value_size];
         value.assign(buf, value_size);
-        res = ::pread(_fd, &buf, value_size, offset + sizeof(unsigned int));
+        res = ::pread(_fd, buf, value_size, offset + sizeof(unsigned int));
         if (res != value_size)
             return IOError;
     }

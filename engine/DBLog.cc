@@ -13,7 +13,7 @@ namespace kv_engine {
 DBLog::~DBLog() {
     // delete log file here
     ::close(_fd);
-    string log_name = ConcatFileName(Configuration::LOG_DIR, Configuration::DBLOG_NAME, 0, id);
+    string log_name = ConcatFileName(Configuration::LOG_DIR, Configuration::DBLOG_NAME, 0, _id);
     ::remove(log_name.data());
 
 }
@@ -54,15 +54,16 @@ Status DBLog::Log(const KeyType & key, const ValueType & value) {
     }
 }
 
-Status DBLog::Open(const long & _id) {
-    string log_name = ConcatFileName(Configuration::LOG_DIR, Configuration::DBLOG_NAME, 0, _id);
+Status DBLog::Open(const long & id) {
+    string log_name = ConcatFileName(Configuration::LOG_DIR, Configuration::DBLOG_NAME, 0, id);
     int fd = ::open(log_name.data(), O_WRONLY | O_CREAT | O_APPEND, 0777);
     if (fd <= 0) {
         ERRORLOG("Can't create log file %s.", log_name.data());
         return FileNotFound;
     }    
     _fd = fd;
-    return Success;
+    _id = id;
+    return Success; 
 }
 
 Status DBLog::Recover(MemTable * _mem, long id) {

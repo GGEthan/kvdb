@@ -16,9 +16,18 @@ public:
     NoCopyString(const char * s) : _data(s), _size(strlen(s)) { }
     NoCopyString(char * s, size_t n) : _data(s), _size(n) { } 
     NoCopyString(const string & s) : _data(s.data()), _size(s.size()) { }
-
-	// The only copy method
+	NoCopyString(const bool & _removed) : removed(_removed) { }
+	// copy method
 	NoCopyString(const NoCopyString & that) {
+		copy(that);
+	}
+	// copy method
+	NoCopyString& operator=(const NoCopyString & that) {
+		copy(that);
+		return *this;
+	}
+	// copy method
+	void copy(const NoCopyString & that) {
 		if (_need_free)
 			delete _data;
 		char* tmp = new char[that._size];
@@ -26,6 +35,7 @@ public:
 		memcpy(tmp, that._data, _size);
 		_data = tmp;
 		_need_free = true;
+		removed = that.removed;
 	}
 
 	~NoCopyString() {
@@ -65,6 +75,7 @@ public:
 		_data = that._data;
 		_size = that._size;
 		_need_free = false;
+		removed = that.removed;
 	}
 
 	void assign(const char * src, size_t n) {
@@ -74,7 +85,7 @@ public:
 		_size = n;
 		_need_free = true;
 	}
-
+	bool removed = false;
 protected:
     const char * _data = (const char *)this;
     unsigned int _size = 0;
@@ -82,16 +93,16 @@ protected:
 };
 
 typedef NoCopyString KeyType;
-
-class ValueType : public NoCopyString {
-public :
-	bool removed;
-	ValueType(){removed = false;}
-	ValueType(const ValueType & that) : removed(that.removed), NoCopyString(that){ }
-	ValueType(const string & str) : removed(false), NoCopyString(str) { }
-	ValueType(const bool & _removed) : removed(_removed) { }
-	ValueType(const char * str) : removed(false), NoCopyString(str) { }
-};
+typedef NoCopyString ValueType;
+// class ValueType : public NoCopyString {
+// public :
+	
+// 	ValueType(){removed = false;}
+// 	ValueType(const ValueType & that) : removed(that.removed), NoCopyString(that){ }
+// 	ValueType(const string & str) : removed(false), NoCopyString(str) { }
+// 	ValueType(const bool & _removed) : removed(_removed) { }
+// 	ValueType(const char * str) : removed(false), NoCopyString(str) { }
+// };
 
 class ScanHandle {
 public:

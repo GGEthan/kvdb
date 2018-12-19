@@ -18,12 +18,15 @@ condition_variable MemTable::change_cv;
 
 MemTable::MemTable() {
 	_index = new RBTree();
-	id = time(NULL);
+	//id = time(NULL);
+	id = Configuration::meta->new_id();
 	_log = new DBLog();
 	_log->Open(id);
 }
 
 MemTable::~MemTable() {
+	if (immutableTable == this)
+		immutableTable = nullptr;
 	change_mtx.unlock();
 	// TODO : release resource
 	unique_lock<mutex> ulock(_readers_mtx);
@@ -113,7 +116,8 @@ Status MemTable::Delete(const KeyType & key) {
 	Status res = _index->Delete(key);
 
 	writerOut();
-
+	std::lock_guard<std::mutex> guard(_size_mtx);
+	_size += key.size();
 	return res;
 }
 
