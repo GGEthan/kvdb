@@ -6,3 +6,4 @@
 /build/Makefile
 /engine/build/*
 /engine/.vscode/*
+/engine/release/*

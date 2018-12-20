@@ -29,10 +29,6 @@ public:
 
 	static std::map<long, TableReader*> TableReaderMap;
 
-	static void init() {
-		MAX_MEMTABLE_SIZE = 0;
-	}
-	
 };
 } // namespace kv_engine
 

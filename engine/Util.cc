@@ -90,7 +90,7 @@ std::vector<std::string> StringSplit(const std::string & from,const std::string 
     std::vector<std::string> result;
     std::string str = from;
 
-    str += pattern;//扩展字符串以方便操作
+    str += pattern;
     size_t size = str.size();
     
     for (size_t i = 0; i < size; i++) {
