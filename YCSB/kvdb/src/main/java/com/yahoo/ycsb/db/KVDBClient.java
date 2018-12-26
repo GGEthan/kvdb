@@ -13,7 +13,6 @@ import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
 import org.apache.log4j.Logger;
@@ -47,7 +46,7 @@ public class KVDBClient extends DB {
   public void init() throws DBException {
     kve = new Access();
 
-    String logDir = getProperties.getProperty(LOG_DIR, LOG_DIR_DEFAULT);
+    String logDir = getProperties().getProperty(LOG_DIR, LOG_DIR_DEFAULT);
     String dataDir = getProperties().getProperty(DATA_DIR, DATA_DIR_DEFAULT);
     kve.open(logDir, dataDir);
   }
