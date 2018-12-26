@@ -52,18 +52,12 @@ $ sudo cp libkvdb.so /lib
 $ cd ./YCSB
 $ cp -r kvdb /xxx/YCSB
 ```
-
-2. set the diretory of data and log for KVDB in kvdb/src/main/java/com/yahoo/ycsb/db/KVDBClient.java
-```
-  @Override
-  public void init() throws DBException {
-    kve = new Access();
-    String logDir = "/xxx/log";
-    String dataDir = "/xxx/data";
-    kve.open(logDir, dataDir);
-  }
-```
    
+2. add the javaDriver to Maven local repository
+
+```
+mvn install:install-file -Dfile= /xxx/YCSB/kvdb/libs/kvdb.jar -DgroupId=com.kvdb -DartifactId=driver -Dversion=1.0.0 -Dpackaging=jar
+```
 
 3. add something in the four files: 
    
@@ -98,9 +92,9 @@ $ cd /xxx/YCSB
 $ mvn clean package
 ```
 
-5. test
+5. test (you can specify the location of log and data, or the default directories are /tmp/kvdb/log; /tmp/kvdb/data)
 ```
 $ cd /xxx/YCSB
-$ ./bin/ycsb load kvdb -s -P workloads/workloada
-$ ./bin/ycsb run kvdb -s -P workloads/workloada
+$ ./bin/ycsb load kvdb -s -P workloads/workloada -p "logDir=/xxx/..." -p "dataDir=/xxx/..."
+$ ./bin/ycsb run kvdb -s -P workloads/workloada -p "logDir=/xxx/..." -p "dataDir=/xxx/..."
 ```

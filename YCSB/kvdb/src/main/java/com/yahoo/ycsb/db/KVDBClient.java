@@ -13,6 +13,7 @@ import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
 import org.apache.log4j.Logger;
@@ -34,14 +35,20 @@ public class KVDBClient extends DB {
     System.loadLibrary("kvdb");
   }
   
+  public static final String LOG_DIR = "logDir";
+  public static final String DATA_DIR = "dataDir";
+  public static final String LOG_DIR_DEFAULT = "/tmp/kvdb/log";
+  public static final String DATA_DIR_DEFAULT = "/tmp/kvdb/data";
+
   private final Logger logger = Logger.getLogger(getClass());
   protected static final ObjectMapper MAPPER = new ObjectMapper();
   private Access kve;
   @Override
   public void init() throws DBException {
     kve = new Access();
-    String logDir = "/home/hadoop/Documents/tmp/log";
-    String dataDir = "/home/hadoop/Documents/tmp/data";
+
+    String logDir = getProperties.getProperty(LOG_DIR, LOG_DIR_DEFAULT);
+    String dataDir = getProperties().getProperty(DATA_DIR, DATA_DIR_DEFAULT);
     kve.open(logDir, dataDir);
   }
   @Override
