@@ -4,7 +4,7 @@
 
 ## KV Engine
 
-### How to build?
+###  How to build?
 
 ```
 $ cd ./engine/build
@@ -46,27 +46,29 @@ $ sudo cp libkvdb.so /lib
 
 ### HOW to add KVDB to YCSB
 
-1. put directory ./YCSB/kvdb in the root directory of YCSB like other database.
+1. be sure that the libkvdb.so is in /lib
+
+2. put directory ./YCSB/kvdb in the root directory of YCSB like other database.
 
 ```
 $ cd ./YCSB
 $ cp -r kvdb /xxx/YCSB
 ```
    
-2. add the javaDriver to Maven local repository
+3. add the javaDriver to Maven local repository
 
 ```
 mvn install:install-file -Dfile= /xxx/YCSB/kvdb/libs/kvdb.jar -DgroupId=com.kvdb -DartifactId=driver -Dversion=1.0.0 -Dpackaging=jar
 ```
 
-3. add something in the four files: 
+4. add something in the four files: 
    
-/xxx/YCSB/pom.xml;
+/xxx/YCSB/pom.xml
 ```
 <module>kvdb</module>
 ```
 
-/xxx/YCSB/bin/ycsb;
+/xxx/YCSB/bin/ycsb
 ```
 "kvdb"         : "com.yahoo.ycsb.db.KVDBClient",
 ```
@@ -86,13 +88,13 @@ kvdb:com.yahoo.ycsb.db.KVDBClient
 </dependency>
 ```
 
-4. compile
+5. compile
 ```
 $ cd /xxx/YCSB
 $ mvn clean package
 ```
 
-5. test (you can specify the location of log and data, or the default directories are /tmp/kvdb/log; /tmp/kvdb/data)
+6. test (you can specify the location of log and data, or the default directories are /tmp/kvdb/log; /tmp/kvdb/data)
 ```
 $ cd /xxx/YCSB
 $ ./bin/ycsb load kvdb -s -P workloads/workloada -p "logDir=/xxx/..." -p "dataDir=/xxx/..."
